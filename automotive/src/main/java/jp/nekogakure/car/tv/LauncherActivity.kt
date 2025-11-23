@@ -14,8 +14,13 @@ import android.widget.FrameLayout
 import android.view.ViewGroup
 import android.view.View
 import android.widget.TextView
+import android.widget.LinearLayout
+import android.widget.Button
+import android.view.Gravity
+import android.graphics.Color
 
-const val url = "https://tver.jp/"
+const val tver_url = "https://tver.jp/"
+const val youtube_url = "https://www.youtube.com/"
 
 class LauncherActivity : ComponentActivity() {
     private var webView: WebView? = null
@@ -35,6 +40,9 @@ class LauncherActivity : ComponentActivity() {
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
         )
+
+        val tabHeightPx = (56 * resources.displayMetrics.density).toInt()
+        wv.setPadding(0, 0, 0, tabHeightPx)
 
         // Debugging
         WebView.setWebContentsDebuggingEnabled(true)
@@ -77,9 +85,70 @@ class LauncherActivity : ComponentActivity() {
         cookieManager.setAcceptCookie(true)
         cookieManager.setAcceptThirdPartyCookies(wv, true)
 
-        // loading URL
+        // Bottom tabs (TVer / YouTube)
+        val tabs = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                tabHeightPx,
+                Gravity.BOTTOM
+            )
+            setBackgroundColor(Color.DKGRAY)
+        }
+
+        val tverButton = Button(this).apply {
+            text = "TVer"
+            setTextColor(Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+            setBackgroundColor(Color.TRANSPARENT)
+        }
+
+        val ytButton = Button(this).apply {
+            text = "YouTube"
+            setTextColor(Color.LTGRAY)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+            setBackgroundColor(Color.TRANSPARENT)
+        }
+
+        tabs.addView(tverButton)
+        tabs.addView(ytButton)
+
+        fun updateSelection(selected: Button) {
+            if (selected === tverButton) {
+                tverButton.setTextColor(Color.WHITE)
+                ytButton.setTextColor(Color.LTGRAY)
+            } else {
+                tverButton.setTextColor(Color.LTGRAY)
+                ytButton.setTextColor(Color.WHITE)
+            }
+        }
+
+        tverButton.setOnClickListener {
+            try {
+                wv.loadUrl(tver_url)
+                updateSelection(tverButton)
+            } catch (e: Exception) {
+                errorView.text = "Failed: ${e.message}"
+                errorView.visibility = View.VISIBLE
+                wv.visibility = View.GONE
+            }
+        }
+
+        ytButton.setOnClickListener {
+            try {
+                wv.loadUrl(youtube_url)
+                updateSelection(ytButton)
+            } catch (e: Exception) {
+                errorView.text = "Failed: ${e.message}"
+                errorView.visibility = View.VISIBLE
+                wv.visibility = View.GONE
+            }
+        }
+
+        // loading default URL (TVer)
         try {
-            wv.loadUrl(url)
+            wv.loadUrl(tver_url)
+            updateSelection(tverButton)
         } catch (e: Exception) {
             errorView.text = "Failed: ${e.message}"
             errorView.visibility = View.VISIBLE
@@ -88,6 +157,7 @@ class LauncherActivity : ComponentActivity() {
 
         root.addView(wv)
         root.addView(errorView)
+        root.addView(tabs)
         setContentView(root)
         webView = wv
     }
